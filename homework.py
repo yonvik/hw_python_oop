@@ -11,7 +11,7 @@ class InfoMessage:
     distance: float
     speed: float
     calories: float
-    alert = (
+    MESSAGE = (
         'Тип тренировки: {training_type}; '
         'Длительность: {duration:.3f} ч.; '
         'Дистанция: {distance:.3f} км; '
@@ -20,7 +20,7 @@ class InfoMessage:
     )
 
     def get_message(self) -> str:
-        return self.alert.format(**asdict(self))
+        return self.MESSAGE.format(**asdict(self))
 
 
 @dataclass
@@ -33,6 +33,7 @@ class Training:
 
     LEN_STEP = 0.65
     M_IN_KM = 1000
+    MIN_IN_H = 60
 
     def get_distance(self) -> float:
         """Получить дистанцию в км."""
@@ -61,16 +62,21 @@ class Training:
 class Running(Training):
     """Тренировка: бег."""
 
-    Average_speed_run_1 = 18
-    Average_speed_run_2 = 20
-    Minutes_in_hour = 60
+    SPEED_MULTIPLIER = 18
+    SPEED_SHIFT = 20
 
     def get_spent_calories(self) -> float:
         """Расчет каллорий для бега."""
         return (
-            (self.Average_speed_run_1 * self.get_mean_speed()
-             - self.Average_speed_run_2) * self.weight
-            / self.M_IN_KM * self.duration * self.Minutes_in_hour
+            (
+                self.SPEED_MULTIPLIER
+                * self.get_mean_speed()
+                - self.SPEED_SHIFT
+            )
+            * self.weight
+            / self.M_IN_KM
+            * self.duration
+            * self.MIN_IN_H
         )
 
 
@@ -80,17 +86,16 @@ class SportsWalking(Training):
 
     height: float
 
-    Average_speed_spw_1 = 0.035
-    Average_speed_spw_2 = 0.029
-    Minutes_in_hour = 60
+    FIRST_MULTIPLIER = 0.035
+    SECOND_MULTIPLIER = 0.029
 
     def get_spent_calories(self) -> float:
         """Расчет каллорий для спортивной хотьбы."""
         return (
-            (self.Average_speed_spw_1 * self.weight
+            (self.FIRST_MULTIPLIER * self.weight
              + (self.get_mean_speed() ** 2 // self.height)
-             * self.Average_speed_spw_2
-             * self.weight) * self.duration * self.Minutes_in_hour
+             * self.SECOND_MULTIPLIER
+             * self.weight) * self.duration * self.MIN_IN_H
         )
 
 
@@ -102,8 +107,8 @@ class Swimming(Training):
     count_pool: int
 
     LEN_STEP = 1.38
-    Average_speed_swm_1 = 1.1
-    Average_speed_swm_2 = 2
+    SPEED_MULTIPLIER = 1.1
+    SPEED_SHIFT = 2
 
     def get_distance(self) -> float:
         """Расчет дистанции для плаванья."""
@@ -119,26 +124,26 @@ class Swimming(Training):
     def get_spent_calories(self) -> float:
         """Расчет каллорий для плаванья."""
         return (
-            ((self.get_mean_speed() + self.Average_speed_swm_1)
-             * self.Average_speed_swm_2) * self.weight
+            ((self.get_mean_speed() + self.SPEED_MULTIPLIER)
+             * self.SPEED_SHIFT) * self.weight
         )
+
+
+DICTIONARY = {
+    "SWM": Swimming,
+    "RUN": Running,
+    "WLK": SportsWalking
+}
 
 
 def read_package(workout_type: str, data: List[float]) -> Training:
     """Прочитать данные полученные от датчиков."""
-    dictionary_training = {
-        "SWM": Swimming,
-        "RUN": Running,
-        "WLK": SportsWalking
-    }
-    if workout_type == 'RUN' and len(data) == 3:
-        return dictionary_training['RUN'](*data)
-    elif workout_type == 'SWM' and len(data) == 5:
-        return dictionary_training['SWM'](*data)
-    elif workout_type == 'WLK' and len(data) == 4:
-        return dictionary_training['WLK'](*data)
+    if workout_type not in DICTIONARY:
+        raise ValueError(f'{workout_type} не обнаружен')
+    elif len(data) < len(DICTIONARY):
+        raise ValueError(f'Ошибка элементов data: {len(data)}')
     else:
-        return('Ошибка, некоректные данные')
+        return DICTIONARY.get(workout_type)(*data)
 
 
 def main(training: Training) -> None:

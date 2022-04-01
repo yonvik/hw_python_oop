@@ -1,4 +1,4 @@
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, fields
 from typing import List
 
 
@@ -92,10 +92,17 @@ class SportsWalking(Training):
     def get_spent_calories(self) -> float:
         """Расчет каллорий для спортивной хотьбы."""
         return (
-            (self.FIRST_MULTIPLIER * self.weight
-             + (self.get_mean_speed() ** 2 // self.height)
-             * self.SECOND_MULTIPLIER
-             * self.weight) * self.duration * self.MIN_IN_H
+            (
+                self.FIRST_MULTIPLIER
+                * self.weight
+                + (
+                    self.get_mean_speed() ** 2
+                    // self.height
+                )
+                * self.SECOND_MULTIPLIER
+                * self.weight
+            )
+            * self.duration * self.MIN_IN_H
         )
 
 
@@ -107,43 +114,61 @@ class Swimming(Training):
     count_pool: int
 
     LEN_STEP = 1.38
-    SPEED_MULTIPLIER = 1.1
-    SPEED_SHIFT = 2
+    MULTIPLIER = 1.1
+    SHIFT = 2
 
     def get_distance(self) -> float:
         """Расчет дистанции для плаванья."""
-        return ((self.action * self.LEN_STEP) / self.M_IN_KM)
+        return (
+            (
+                self.action
+                * self.LEN_STEP
+            )
+            / self.M_IN_KM
+        )
 
     def get_mean_speed(self) -> float:
         """Расчет средней скорости для плаванья."""
         return (
-            (self.length_pool * self.count_pool)
-            / self.M_IN_KM / self.duration
+            (
+                self.length_pool
+                * self.count_pool
+            )
+            / self.M_IN_KM
+            / self.duration
         )
 
     def get_spent_calories(self) -> float:
         """Расчет каллорий для плаванья."""
         return (
-            ((self.get_mean_speed() + self.SPEED_MULTIPLIER)
-             * self.SPEED_SHIFT) * self.weight
+            (
+                (
+                    self.get_mean_speed()
+                    + self.MULTIPLIER
+                )
+                * self.SHIFT
+            )
+            * self.weight
         )
 
 
-DICTIONARY = {
+TRAININGS = {
     "SWM": Swimming,
     "RUN": Running,
     "WLK": SportsWalking
 }
 
+ERROR_WORKOUT = '{workout_type} не обнаружен.'
+ERROR_DATA = 'В тренировке {workout_type} количество параметров: {data}.'
+
 
 def read_package(workout_type: str, data: List[float]) -> Training:
     """Прочитать данные полученные от датчиков."""
-    if workout_type not in DICTIONARY:
-        raise ValueError(f'{workout_type} не обнаружен')
-    elif len(data) < len(DICTIONARY):
-        raise ValueError(f'Ошибка элементов data: {len(data)}')
-    else:
-        return DICTIONARY.get(workout_type)(*data)
+    if workout_type not in TRAININGS:
+        raise ValueError(ERROR_WORKOUT.format(workout_type=workout_type))
+    if len(data) != len(fields(TRAININGS[workout_type])):
+        raise ValueError(ERROR_DATA.format(data=data))
+    return TRAININGS.get(workout_type)(*data)
 
 
 def main(training: Training) -> None:

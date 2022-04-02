@@ -153,9 +153,9 @@ class Swimming(Training):
 
 
 TRAININGS = {
-    "SWM": Swimming,
-    "RUN": Running,
-    "WLK": SportsWalking
+    'SWM': (Swimming, len(fields(Swimming))),
+    'RUN': (Running, len(fields(Running))),
+    'WLK': (SportsWalking, len(fields(SportsWalking)))
 }
 
 ERROR_WORKOUT = '{workout_type} не обнаружен.'
@@ -166,9 +166,9 @@ def read_package(workout_type: str, data: List[float]) -> Training:
     """Прочитать данные полученные от датчиков."""
     if workout_type not in TRAININGS:
         raise ValueError(ERROR_WORKOUT.format(workout_type=workout_type))
-    if len(data) != len(fields(TRAININGS[workout_type])):
-        raise ValueError(ERROR_DATA.format(data=data))
-    return TRAININGS.get(workout_type)(*data)
+    if len(data) != TRAININGS[workout_type][1]:
+        raise ValueError(ERROR_DATA.format(data=len(data)))
+    return TRAININGS.get(workout_type)[0](*data)
 
 
 def main(training: Training) -> None:
